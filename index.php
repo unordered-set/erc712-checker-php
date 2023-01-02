@@ -16,6 +16,11 @@ function buildDomainSeparator(String $name, String $version, Int $chainId, Strin
     $nameHash = Keccak::hash($name, 256);
     $versionHash = Keccak::hash($version, 256);
 
+    echo "Hashes\n";
+    echo $typeHash . "\n";
+    echo $nameHash . "\n";
+    echo $versionHash . "\n";
+
     $res = "";
     $res .= $typeHash . $nameHash . $versionHash; 
 
@@ -64,13 +69,18 @@ function getDataHash(String $newUser, String $referral) {
     return Keccak::hash(Utils::hexToBin(substr($res, 64)), 256);
 }
 
+function pubKeyToAddress($pubkey) {
+    return "0x" . substr(Keccak::hash(substr(hex2bin($pubkey->encode("hex")), 1), 256), 24);
+}
+
 
 // TODO: Use your values
 $contractName = "EVO Gateway";
 $contractVersion = "1";
-$chainId = 97;
-$deployedAddress = "0xEf6715b5cd7Cdf5B4344258DcA481A26CFf2D05A";
-$newUser = "0xC64f3e018DCA93edd9AF1d8aeD5CE1676Da357Ff";
+$chainId = 31337;
+$deployedAddress = "0x5fbdb2315678afecb367f032d93f642f64180aa3";
+
+$newUser = "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266";
 $referral = "0x8ba1f109551bD432803012645Ac136ddd64DBA72";
 
 $ourDomainSeparator = buildDomainSeparator($contractName, $contractVersion, $chainId, $deployedAddress);
@@ -79,12 +89,22 @@ echo "DomainHash:" . $ourDomainSeparator . "\n";
 echo "DataHash:" . $dataHash . "\n";
 
 $finalHashToSign = Keccak::hash("\x19\x01" . Utils::hexToBin($ourDomainSeparator) . Utils::hexToBin($dataHash), 256);
+echo "Final Hash " . $finalHashToSign . "\n";
 
 $sign = [
-    "r" => "a3e405a007c882a30cab4b169b0127b4c231e39fa331c8e21ca58ebb1bc91018",
-    "s" => "526d931d772275b1c1b4ae73e525f294e830752ff247c510dacf8f2c7e27ca52",
+    "r" => "9ffd2b713453a3a1001dd6f5bb235bc2bc85beed52c0f5f43c05495fd2688507",
+    "s" => "30b7eed1756794d6f72b437dd761d0993761148d4ae88688d751eb2ee0b6bcfc",
 ];
-$recId = 27;
+$recId = 0;
 
 $publicKey = (new EC("secp256k1"))->recoverPubKey($finalHashToSign, $sign, $recId);
+
+echo "Recovered address " . pubKeyToAddress($publicKey) . "\n";
+
+if (strtolower(pubKeyToAddress($publicKey)) == strtolower($newUser)) {
+    echo "Signature valid";
+} else {
+    echo "Invalid Signature";
+}
+echo "\n";
 ?>
